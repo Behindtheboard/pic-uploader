@@ -27,7 +27,7 @@ export default function Gallery() {
       columnClassName="my-masonry-grid_column"
     >
       {files.map((file) => {
-        const url = `https://drive.google.com/uc?export=download&id=${file.id}`;
+        const url = `https://drive.google.com/uc?export=media&id=${file.id}`;
         return file.mimeType.startsWith("video/") ? (
           <video
             key={file.id}
