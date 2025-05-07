@@ -3,7 +3,9 @@ import { google } from 'googleapis';
 import formidable from 'formidable';
 import fs from 'fs';
 
-export const config = { api: { bodyParser: false } };
+export const config = {
+  api: { bodyParser: false }
+};
 
 export default async function handler(req, res) {
   if (req.method !== 'POST')
@@ -11,20 +13,24 @@ export default async function handler(req, res) {
 
   try {
     await new Promise((resolve, reject) => {
-      const form = new formidable.IncomingForm();
+      // ← Initialize the parser by calling formidable()
+      const form = formidable({ multiples: false });
+
       form.parse(req, async (err, fields, files) => {
         if (err) return reject(err);
-        if (!files.file) return reject(new Error('No file was uploaded'));
+        if (!files.file) return reject(new Error('No file uploaded'));
 
         const stream = fs.createReadStream(files.file.filepath);
-        const keyJson = Buffer.from(
-          process.env.SERVICE_ACCOUNT_KEY, 'base64'
-        ).toString();
+
+        // Decode your base64‐encoded key
+        const keyJson = Buffer
+          .from(process.env.SERVICE_ACCOUNT_KEY, 'base64')
+          .toString();
 
         let key;
         try {
           key = JSON.parse(keyJson);
-        } catch (parseErr) {
+        } catch {
           return reject(new Error('Invalid SERVICE_ACCOUNT_KEY JSON'));
         }
 
