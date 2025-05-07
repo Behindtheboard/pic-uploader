@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import axios from "axios";
 import Gallery from "./components/Gallery";
 import FileUploader from "./components/FileUploader";
 

@@ -6,17 +6,31 @@ export default function FileUploader() {
   const [progress, setProgress] = useState(0);
 
   const upload = async (file) => {
-    const form = new FormData();
-    form.append('file', file);
-    setStatus('Uploading…');
     try {
-      const resp = await axios.post('/api/upload', form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (e) => setProgress(Math.round((e.loaded * 100) / e.total))
+      setStatus('Initializing upload session…');
+      const sessionRes = await axios.post('/api/session', {
+        name: file.name,
+        mimeType: file.type,
       });
-      setStatus(`✔️ Uploaded! ID: ${resp.data.fileId}`);
+      const { sessionUrl, token } = sessionRes.data;
+
+      setStatus('Uploading…');
+      const res = await fetch(sessionUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': file.type,
+          'Authorization': `Bearer ${token}`,
+          'Content-Range': `bytes 0-${file.size - 1}/${file.size}`,
+        },
+        body: file,
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Upload failed: ${res.status} ${text}`);
+      }
+      setStatus('✔️ Upload complete!');
     } catch (e) {
-      setStatus(`❌ Upload failed: ${e.response?.data?.error || e.message}`);
+      setStatus(`❌ ${e.message}`);
     }
   };
 
@@ -28,7 +42,7 @@ export default function FileUploader() {
         onChange={(e) => e.target.files[0] && upload(e.target.files[0])}
       />
       {status && <p>{status}</p>}
-      {status === 'Uploading…' && (
+      {status.startsWith('Uploading') && (
         <progress value={progress} max="100" style={{ width: '100%' }} />
       )}
     </div>
