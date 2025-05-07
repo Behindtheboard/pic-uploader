@@ -1,4 +1,3 @@
-import React, { useState } from "react";
 import Gallery from "./components/Gallery";
 import FileUploader from "./components/FileUploader";
 
