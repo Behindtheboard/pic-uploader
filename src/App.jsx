@@ -1,56 +1,49 @@
-import React, { useEffect, useState } from "react";
-import { loadGapiInsideDOM } from "gapi-script";
-import FileUploader from "./components/FileUploader";
+import React, { useState } from "react";
+import axios from "axios";
+import Gallery from "./components/Gallery";
 
-const CLIENT_ID = "YOUR_CLIENT_ID.apps.googleusercontent.com";
-const API_KEY = "YOUR_API_KEY";
-const SCOPES = "https://www.googleapis.com/auth/drive.file";
-const DISCOVERY_DOCS = [
-  "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest",
-];
+export default function App() {
+  const [progress, setProgress] = useState(0);
+  const [status, setStatus] = useState("");
 
-function App() {
-  const [gapiReady, setGapiReady] = useState(false);
-  const [isSignedIn, setSignedIn] = useState(false);
+  const upload = async (file) => {
+    const form = new FormData();
+    form.append("file", file);
 
-  useEffect(() => {
-    async function initClient() {
-      await loadGapiInsideDOM();
-      window.gapi.load("client:auth2", async () => {
-        await window.gapi.client.init({
-          apiKey: API_KEY,
-          clientId: CLIENT_ID,
-          discoveryDocs: DISCOVERY_DOCS,
-          scope: SCOPES,
-        });
-        const auth = window.gapi.auth2.getAuthInstance();
-        auth.isSignedIn.listen(setSignedIn);
-        setSignedIn(auth.isSignedIn.get());
-        setGapiReady(true);
+    setStatus("Uploading...");
+    try {
+      const resp = await axios.post("/api/upload", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+        onUploadProgress: (e) => {
+          setProgress(Math.round((e.loaded * 100) / e.total));
+        },
       });
+      setStatus(`✔️ Uploaded! ID: ${resp.data.fileId}`);
+    } catch (e) {
+      console.error(e);
+      setStatus("❌ Upload failed");
     }
-    initClient();
-  }, []);
-
-  const handleAuthClick = () => window.gapi.auth2.getAuthInstance().signIn();
-  const handleSignout = () => window.gapi.auth2.getAuthInstance().signOut();
-
-  // … upload logic below …
+  };
 
   return (
-    <div style={{ padding: 20 }}>
-      {!gapiReady && <p>Loading…</p>}
-      {gapiReady && !isSignedIn && (
-        <button onClick={handleAuthClick}>Sign in to Google Drive</button>
-      )}
-      {isSignedIn && (
-        <>
-          <button onClick={handleSignout}>Sign Out</button>
-          <FileUploader />
-        </>
-      )}
-    </div>
+    <>
+      <div style={{ maxWidth: 400, margin: "2rem auto", textAlign: "center" }}>
+        <h2>📷 Upload to My Drive</h2>
+        <input
+          type="file"
+          accept="image/*,video/*"
+          onChange={(e) => e.target.files[0] && upload(e.target.files[0])}
+        />
+
+        {status && <p>{status}</p>}
+        {status === "Uploading..." && (
+          <progress value={progress} max="100" style={{ width: "100%" }} />
+        )}
+      </div>
+      <div style={{ padding: "2rem" }}>
+        <h1>💌 Guest Gallery</h1>
+        <Gallery />
+      </div>
+    </>
   );
 }
-
-export default App;
