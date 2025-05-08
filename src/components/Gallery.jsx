@@ -11,6 +11,7 @@ export default function Gallery() {
       .then((data) => {
         setFiles(data);
         setLoading(false);
+        console.log("🗂️ files from /api/list:", data);
       })
       .catch(() => setLoading(false));
   }, []);
@@ -27,7 +28,7 @@ export default function Gallery() {
       columnClassName="my-masonry-grid_column"
     >
       {files.map((file) => {
-        const url = `https://drive.google.com/uc?export=media&id=${file.id}`;
+        const url = `/api/image?id=${file.id}`;
         return file.mimeType.startsWith("video/") ? (
           <video
             key={file.id}

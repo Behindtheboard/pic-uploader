@@ -7,6 +7,10 @@ export default async function handler(req, res) {
   }
 
   try {
+
+    console.log('🔑 SERVICE_ACCOUNT_KEY present?', !!process.env.SERVICE_ACCOUNT_KEY);
+    console.log('📂 UPLOAD_FOLDER_ID:', process.env.UPLOAD_FOLDER_ID);
+    
     const keyJson = Buffer.from(
       process.env.SERVICE_ACCOUNT_KEY,
       "base64"
@@ -24,6 +28,9 @@ export default async function handler(req, res) {
       orderBy: "createdTime desc",
       pageSize: 1000,
     });
+
+    console.log('🔍 Drive files.list returned:', JSON.stringify(listRes.data.files, null, 2));
+
 
     return res.status(200).json(listRes.data.files);
   } catch (err) {
