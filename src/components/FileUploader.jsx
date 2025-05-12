@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
-export default function MultiFileUploader() {
+export default function FileUploader({ onAllComplete }) {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
   const [uploadStatuses, setUploadStatuses] = useState({}); // { [fileName]: statusString }
@@ -66,6 +66,7 @@ export default function MultiFileUploader() {
       // 3) always success
       setUploadStatuses((s) => ({ ...s, [key]: "✔️ Complete" }));
     }
+    window.location.reload();
   };
 
   return (
