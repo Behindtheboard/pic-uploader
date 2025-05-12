@@ -8,11 +8,8 @@ export default async function handler(req, res) {
 
   try {
 
-    console.log('🔑 SERVICE_ACCOUNT_KEY present?', !!process.env.SERVICE_ACCOUNT_KEY);
-    console.log('📂 UPLOAD_FOLDER_ID:', process.env.UPLOAD_FOLDER_ID);
-    
     const keyJson = Buffer.from(
-      process.env.SERVICE_ACCOUNT_KEY,
+      process.env.local.SERVICE_ACCOUNT_KEY,
       "base64"
     ).toString("utf8");
     const key = JSON.parse(keyJson);
@@ -23,7 +20,7 @@ export default async function handler(req, res) {
     const drive = google.drive({ version: "v3", auth });
 
     const listRes = await drive.files.list({
-      q: `'${process.env.UPLOAD_FOLDER_ID}' in parents and trashed=false`,
+      q: `'${process.env.local.UPLOAD_FOLDER_ID}' in parents and trashed=false`,
       fields: "files(id,name,mimeType,createdTime)",
       orderBy: "createdTime desc",
       pageSize: 1000,
