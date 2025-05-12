@@ -42,7 +42,7 @@ export default function FileUploader() {
   };
 
   return (
-    <div style={{ maxWidth: 400, margin: "2rem auto", textAlign: "center" }}>
+    <div id="upload-section" style={{ maxWidth: 400, margin: "2rem auto", textAlign: "center" }}>
       <input
         type="file"
         accept="image/*,video/*"

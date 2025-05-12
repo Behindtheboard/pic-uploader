@@ -10,3 +10,12 @@
   flex-direction: column;
   align-items: center;
 }
+
+#upload-section {
+  display: flex;
+  justify-content: center;
+}
+
+input {
+  text-align: center;
+}
