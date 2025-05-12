@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Masonry from "react-masonry-css";
 
-export default function Gallery({ refreshKey }) {
+export default function Gallery() {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -14,7 +14,7 @@ export default function Gallery({ refreshKey }) {
         console.log("🗂️ files from /api/list:", data);
       })
       .catch(() => setLoading(false));
-  }, [refreshKey]);
+  }, []);
 
   const cols = { default: 4, 1200: 3, 800: 2, 500: 1 };
 
