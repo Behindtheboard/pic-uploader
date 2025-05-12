@@ -9,7 +9,7 @@ export default async function handler(req, res) {
 
   // Decode your service account JSON
   const key = JSON.parse(
-    Buffer.from(process.env.local.SERVICE_ACCOUNT_KEY, 'base64').toString()
+    Buffer.from(process.env.SERVICE_ACCOUNT_KEY, 'base64').toString()
   );
   const auth = new google.auth.JWT(
     key.client_email,

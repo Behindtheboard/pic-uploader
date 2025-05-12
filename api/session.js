@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   try {
     const { name, mimeType } = req.body;
     const key = JSON.parse(
-      Buffer.from(process.env.local.SERVICE_ACCOUNT_KEY, 'base64').toString('utf8')
+      Buffer.from(process.env.SERVICE_ACCOUNT_KEY, 'base64').toString('utf8')
     );
     const auth = new google.auth.JWT(
       key.client_email,
@@ -31,7 +31,7 @@ export default async function handler(req, res) {
         },
         body: JSON.stringify({
           name,
-          parents: [process.env.local.UPLOAD_FOLDER_ID]
+          parents: [process.env.UPLOAD_FOLDER_ID]
         })
       }
     );
