@@ -67,6 +67,7 @@ export default function FileUploader({ onAllComplete }) {
       setUploadStatuses((s) => ({ ...s, [key]: "✔️ Complete" }));
     }
     if (onAllComplete) onAllComplete();
+    handleClear();
   };
 
   return (
