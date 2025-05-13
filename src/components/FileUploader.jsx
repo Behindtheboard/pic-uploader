@@ -66,7 +66,7 @@ export default function FileUploader({ onAllComplete }) {
       // 3) always success
       setUploadStatuses((s) => ({ ...s, [key]: "✔️ Complete" }));
     }
-    window.location.reload();
+    if (onAllComplete) onAllComplete();
   };
 
   return (
