@@ -1,6 +1,7 @@
 import Gallery from "./components/Gallery";
 import FileUploader from "./components/FileUploader";
 import { useState } from "react";
+import './styles/FileUploader.css'
 
 export default function App() {
   const [refreshKey, setRefreshKey] = useState(0);

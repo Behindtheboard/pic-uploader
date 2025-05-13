@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import "../styles/FileUploader.css";
 
 export default function FileUploader({ onAllComplete }) {
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -87,7 +88,7 @@ export default function FileUploader({ onAllComplete }) {
 
       {/* Preview list and actions appear immediately */}
       {selectedFiles.length > 0 && (
-        <div style={{ textAlign: "left", marginTop: 16 }}>
+        <div id="preview" style={{ textAlign: "left", marginTop: 16 }}>
           <h4>Selected Files:</h4>
           <ul style={{ listStyle: "none", padding: 0 }}>
             {selectedFiles.map((file, idx) => {
