@@ -37,71 +37,74 @@ export default function FileUploader({ onAllComplete }) {
   };
 
   const handleUploadAll = async () => {
-  setIsUploading(true);
+    setIsUploading(true);
 
-  for (const file of selectedFiles) {
-    const key = file.name;
-    // 1) Initializing…
-    setUploadStatuses((s) => ({ ...s, [key]: "Initializing…" }));
+    for (const file of selectedFiles) {
+      const key = file.name;
+      // 1) Initializing…
+      setUploadStatuses((s) => ({ ...s, [key]: "Initializing…" }));
 
-    let sessionData;
-    try {
-      const resp = await axios.post("/api/session", {
-        name: file.name,
-        mimeType: file.type,
-      });
-      sessionData = resp.data;
-    } catch (err) {
-      console.warn("Session init error ignored for", key, err);
-      // still attempt upload to keep UI moving
-      sessionData = {};
-    }
-
-    const { sessionUrl, token } = sessionData;
-    // 2) Uploading…
-    setUploadStatuses((s) => ({ ...s, [key]: "Uploading…" }));
-    if (sessionUrl && token) {
-      await axios
-        .put(sessionUrl, file, {
-          headers: {
-            "Content-Type": file.type,
-            Authorization: `Bearer ${token}`,
-            "Content-Range": `bytes 0-${file.size - 1}/${file.size}`,
-          },
-          onUploadProgress: (evt) => {
-            const pct = Math.round((evt.loaded * 100) / evt.total);
-            setUploadProgress((p) => ({ ...p, [key]: pct }));
-          },
-        })
-        .catch(() => console.warn("Network error ignored for", key));
-    }
-
-    // 3) Try to lookup the new file’s id via /api/list
-    let fileMeta = { name: file.name, mimeType: file.type };
-    try {
-      const listRes = await axios.get("/api/list");
-      const found = listRes.data.find((f) => f.name === file.name);
-      if (found && found.id) {
-        fileMeta = found;
+      let sessionData;
+      try {
+        const resp = await axios.post(
+          `${import.meta.env.VITE_API_BASE_URL}/api/session`,
+          {
+            name: file.name,
+            mimeType: file.type,
+          }
+        );
+        sessionData = resp.data;
+      } catch (err) {
+        console.warn("Session init error ignored for", key, err);
+        // still attempt upload to keep UI moving
+        sessionData = {};
       }
-    } catch (err) {
-      console.warn("Could not re-fetch list for", key, err);
+
+      const { sessionUrl, token } = sessionData;
+      // 2) Uploading…
+      setUploadStatuses((s) => ({ ...s, [key]: "Uploading…" }));
+      if (sessionUrl && token) {
+        await axios
+          .put(sessionUrl, file, {
+            headers: {
+              "Content-Type": file.type,
+              Authorization: `Bearer ${token}`,
+              "Content-Range": `bytes 0-${file.size - 1}/${file.size}`,
+            },
+            onUploadProgress: (evt) => {
+              const pct = Math.round((evt.loaded * 100) / evt.total);
+              setUploadProgress((p) => ({ ...p, [key]: pct }));
+            },
+          })
+          .catch(() => console.warn("Network error ignored for", key));
+      }
+
+      // 3) Try to lookup the new file’s id via /api/list
+      let fileMeta = { name: file.name, mimeType: file.type };
+      try {
+        const listRes = await axios.get("/api/list");
+        const found = listRes.data.find((f) => f.name === file.name);
+        if (found && found.id) {
+          fileMeta = found;
+        }
+      } catch (err) {
+        console.warn("Could not re-fetch list for", key, err);
+      }
+
+      // 4) Mark complete & fire events
+      setUploadStatuses((s) => ({ ...s, [key]: "✔️ Complete" }));
+      window.dispatchEvent(
+        new CustomEvent("fileUploadStarted", { detail: fileMeta })
+      );
+      window.dispatchEvent(
+        new CustomEvent("fileUploaded", { detail: fileMeta })
+      );
+      if (onAllComplete) onAllComplete(fileMeta);
     }
 
-    // 4) Mark complete & fire events
-    setUploadStatuses((s) => ({ ...s, [key]: "✔️ Complete" }));
-    window.dispatchEvent(
-      new CustomEvent("fileUploadStarted", { detail: fileMeta })
-    );
-    window.dispatchEvent(
-      new CustomEvent("fileUploaded", { detail: fileMeta })
-    );
-    if (onAllComplete) onAllComplete(fileMeta);
-  }
-
-  // 5) Cleanup
-  handleClear();
-};
+    // 5) Cleanup
+    handleClear();
+  };
 
   return (
     <div
