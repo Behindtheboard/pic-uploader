@@ -51,28 +51,15 @@ export default function Gallery({ refreshKey }) {
       >
         {displayFiles.map((file) => {
           const url = `/api/image?id=${file.id}`;
-          if (file.mimeType.startsWith("video/")) {
-            // assume your list API also returns a thumbnailLink, or you have one generated server-side
-            const poster = file.thumbnailLink || "/placeholder-thumb.png";
-
-            return (
-              <video
-                key={file.id}
-                style={{ width: "100%", borderRadius: 4, cursor: "pointer" }}
-                controls
-                preload="none"
-                poster={poster}
-                // optional: start playing on click
-                onClick={(e) => e.currentTarget.play()}
-              >
-                <source src={`/api/video?id=${file.id}`} type={file.mimeType} />
-                Your browser does not support HTML5 video.
-              </video>
-            );
-          }
-
-          // images as before…
-          return (
+          return file.mimeType.startsWith("video/") ? (
+            <video
+              key={file.id}
+              src={url}
+              preload="metadata"
+              controls
+              style={{ width: "100%", borderRadius: 4 }}
+            />
+          ) : (
             <img
               key={file.id}
               src={url}

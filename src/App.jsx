@@ -1,7 +1,6 @@
 import Gallery from "./components/Gallery";
 import FileUploader from "./components/FileUploader";
 import { useState } from "react";
-import './styles/FileUploader.css'
 
 export default function App() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -16,6 +15,7 @@ export default function App() {
         style={{ maxWidth: 400, margin: "2rem auto", textAlign: "center" }}
       >
         <h2>📷 Upload to our drive!</h2>
+        <p>Please be careful to make sure you upload the correct photos or videos!</p>
         <FileUploader onAllComplete={handleUploadsComplete} />
       </div>
 

@@ -81,7 +81,7 @@ export default function FileUploader({ onAllComplete }) {
         <input
           type="file"
           multiple
-          accept="image/*,video/*"
+          accept=".mov, .mp4, .jpeg, .heic"
           onChange={handleFileChange}
         />
       )}
