@@ -8,9 +8,9 @@ export default function FileUploader({ onAllComplete }) {
   const [uploadStatuses, setUploadStatuses] = useState({});
   const [uploadProgress, setUploadProgress] = useState({});
 
-  // Build previews: object URLs for all files (images & videos)
+  // Generate blob URLs for preview
   useEffect(() => {
-    // cleanup old URLs
+    // revoke old URLs
     previewUrls.forEach((u) => u && URL.revokeObjectURL(u));
 
     if (selectedFiles.length === 0) {
@@ -18,7 +18,7 @@ export default function FileUploader({ onAllComplete }) {
       return;
     }
 
-    // create new ones
+    // create new blob URLs
     const urls = selectedFiles.map((file) => URL.createObjectURL(file));
     setPreviewUrls(urls);
   }, [selectedFiles]);
@@ -78,12 +78,16 @@ export default function FileUploader({ onAllComplete }) {
       style={{ maxWidth: 400, margin: "2rem auto", textAlign: "center" }}
     >
       {!selectedFiles.length && (
-        <input type="file" multiple onChange={handleFileChange} />
+        <input
+          type="file"
+          multiple
+          accept="image/*,video/*"
+          onChange={handleFileChange}
+        />
       )}
 
       {selectedFiles.length > 0 && (
         <div
-          id="preview"
           style={{
             textAlign: "left",
             marginTop: 16,
@@ -92,9 +96,11 @@ export default function FileUploader({ onAllComplete }) {
           }}
         >
           <h4>Selected Files:</h4>
-          <ul style={{ listStyle: "none", padding: 0 }}>
+          <ul id="preview" style={{ listStyle: "none", padding: 0 }}>
             {selectedFiles.map((file, idx) => {
               const url = previewUrls[idx];
+              const isImage = file.type.startsWith("image/");
+              const isVideo = file.type.startsWith("video/");
               return (
                 <li
                   key={file.name}
@@ -104,7 +110,7 @@ export default function FileUploader({ onAllComplete }) {
                     marginBottom: 12,
                   }}
                 >
-                  {url ? (
+                  {isImage && url && (
                     <img
                       src={url}
                       alt={file.name}
@@ -115,7 +121,21 @@ export default function FileUploader({ onAllComplete }) {
                         marginRight: 12,
                       }}
                     />
-                  ) : (
+                  )}
+                  {isVideo && url && (
+                    <video
+                      src={url}
+                      controls
+                      preload="metadata"
+                      style={{
+                        width: 80,
+                        height: 80,
+                        objectFit: "cover",
+                        marginRight: 12,
+                      }}
+                    />
+                  )}
+                  {!url && (
                     <div
                       style={{
                         width: 80,
@@ -131,13 +151,13 @@ export default function FileUploader({ onAllComplete }) {
                         padding: 4,
                       }}
                     >
-                      �<br />
-                      {file.name}
+                      {/* �<br />
+                      {file.name} */}
                     </div>
                   )}
 
                   <div style={{ flex: 1 }}>
-                    <div>{file.name}</div>
+                    {/* <div>{file.name}</div> */}
                     {uploadStatuses[file.name] && (
                       <div style={{ fontSize: "0.9em", marginTop: 4 }}>
                         {uploadStatuses[file.name]}
@@ -155,6 +175,7 @@ export default function FileUploader({ onAllComplete }) {
               );
             })}
           </ul>
+
           <div style={{ textAlign: "center" }}>
             <button
               onClick={handleUploadAll}
