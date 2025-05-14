@@ -5,47 +5,51 @@ import "../styles/FileUploader.css";
 export default function FileUploader({ onAllComplete }) {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
-  const [uploadStatuses, setUploadStatuses] = useState({}); // { [fileName]: statusString }
-  const [uploadProgress, setUploadProgress] = useState({}); // { [fileName]: 0–100 }
+  const [uploadStatuses, setUploadStatuses] = useState({});
+  const [uploadProgress, setUploadProgress] = useState({});
 
-  // Build and revoke object-URLs for previews
+  // Build previews: object URLs for all files (images & videos)
   useEffect(() => {
-    if (!selectedFiles.length) {
+    // cleanup old URLs
+    previewUrls.forEach((u) => u && URL.revokeObjectURL(u));
+
+    if (selectedFiles.length === 0) {
       setPreviewUrls([]);
       return;
     }
-    const urls = selectedFiles.map((f) => URL.createObjectURL(f));
+
+    // create new ones
+    const urls = selectedFiles.map((file) => URL.createObjectURL(file));
     setPreviewUrls(urls);
-    return () => urls.forEach((u) => URL.revokeObjectURL(u));
   }, [selectedFiles]);
 
   const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
     setSelectedFiles(files);
     setUploadStatuses({});
     setUploadProgress({});
   };
 
   const handleClear = () => {
+    previewUrls.forEach((u) => u && URL.revokeObjectURL(u));
     setSelectedFiles([]);
+    setPreviewUrls([]);
     setUploadStatuses({});
     setUploadProgress({});
   };
 
-  // Upload each file in sequence
   const handleUploadAll = async () => {
     for (const file of selectedFiles) {
       const key = file.name;
       setUploadStatuses((s) => ({ ...s, [key]: "Initializing…" }));
 
-      // 1) create session
       const { data } = await axios.post("/api/session", {
         name: file.name,
         mimeType: file.type,
       });
       const { sessionUrl, token } = data;
 
-      // 2) upload but never throw
       setUploadStatuses((s) => ({ ...s, [key]: "Uploading…" }));
       await axios
         .put(sessionUrl, file, {
@@ -59,14 +63,11 @@ export default function FileUploader({ onAllComplete }) {
             setUploadProgress((p) => ({ ...p, [key]: pct }));
           },
         })
-        .catch((err) => {
-          // ignore everything
-          console.warn("Upload error ignored for", key, err.code || err);
-        });
+        .catch((err) => console.warn("Upload error ignored for", key, err));
 
-      // 3) always success
       setUploadStatuses((s) => ({ ...s, [key]: "✔️ Complete" }));
     }
+
     if (onAllComplete) onAllComplete();
     handleClear();
   };
@@ -76,52 +77,75 @@ export default function FileUploader({ onAllComplete }) {
       id="upload-section"
       style={{ maxWidth: 400, margin: "2rem auto", textAlign: "center" }}
     >
-      {/* File picker hidden once files selected */}
       {!selectedFiles.length && (
-        <input
-          type="file"
-          multiple
-          accept=".mov, .mp4, .jpeg, .heic"
-          onChange={handleFileChange}
-        />
+        <input type="file" multiple onChange={handleFileChange} />
       )}
 
-      {/* Preview list and actions appear immediately */}
       {selectedFiles.length > 0 && (
-        <div id="preview" style={{ textAlign: "left", marginTop: 16 }}>
+        <div
+          id="preview"
+          style={{
+            textAlign: "left",
+            marginTop: 16,
+            border: "1px solid #ccc",
+            padding: 8,
+          }}
+        >
           <h4>Selected Files:</h4>
           <ul style={{ listStyle: "none", padding: 0 }}>
             {selectedFiles.map((file, idx) => {
-              const key = file.name;
+              const url = previewUrls[idx];
               return (
                 <li
-                  key={key}
+                  key={file.name}
                   style={{
                     display: "flex",
                     alignItems: "center",
                     marginBottom: 12,
                   }}
                 >
-                  <img
-                    src={previewUrls[idx]}
-                    alt={key}
-                    style={{
-                      width: 80,
-                      height: 80,
-                      objectFit: "cover",
-                      marginRight: 12,
-                    }}
-                  />
+                  {url ? (
+                    <img
+                      src={url}
+                      alt={file.name}
+                      style={{
+                        width: 80,
+                        height: 80,
+                        objectFit: "cover",
+                        marginRight: 12,
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: 80,
+                        height: 80,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "#eee",
+                        color: "#666",
+                        marginRight: 12,
+                        fontSize: "0.8em",
+                        textAlign: "center",
+                        padding: 4,
+                      }}
+                    >
+                      �<br />
+                      {file.name}
+                    </div>
+                  )}
+
                   <div style={{ flex: 1 }}>
-                    <div>{key}</div>
-                    {uploadStatuses[key] && (
+                    <div>{file.name}</div>
+                    {uploadStatuses[file.name] && (
                       <div style={{ fontSize: "0.9em", marginTop: 4 }}>
-                        {uploadStatuses[key]}
+                        {uploadStatuses[file.name]}
                       </div>
                     )}
-                    {uploadProgress[key] != null && (
+                    {uploadProgress[file.name] != null && (
                       <progress
-                        value={uploadProgress[key]}
+                        value={uploadProgress[file.name]}
                         max="100"
                         style={{ width: "100%", marginTop: 4 }}
                       />
@@ -131,7 +155,6 @@ export default function FileUploader({ onAllComplete }) {
               );
             })}
           </ul>
-
           <div style={{ textAlign: "center" }}>
             <button
               onClick={handleUploadAll}
