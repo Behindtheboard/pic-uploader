@@ -9,42 +9,43 @@ export default function Gallery({ refreshKey }) {
 
   const BATCH_SIZE = 8;
 
-  // 1) Fetch once (or you could fetch page-by-page from your API)
+  // 1) Initial fetch – only images
   useEffect(() => {
     setLoading(true);
     fetch("/api/list")
       .then((r) => r.json())
       .then((data) => {
-        setAllFiles(data);
-        setDisplayFiles(data.slice(0, BATCH_SIZE));
-        setLoading(false);
+        const images = data.filter((f) => !f.mimeType.startsWith("video/"));
+        setAllFiles(images);
+        setDisplayFiles(images.slice(0, BATCH_SIZE));
       })
-      .catch(() => setLoading(false));
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, [refreshKey]);
 
+  // 2) Listen for image uploads only
   useEffect(() => {
     const onFileUploaded = (e) => {
-      const newFile = e.detail; // { id, name, mimeType }
+      const newFile = e.detail;
+      if (newFile.mimeType.startsWith("video/")) return;
       setAllFiles((prev) => [newFile, ...prev]);
       setDisplayFiles((prev) => [newFile, ...prev]);
     };
     window.addEventListener("fileUploaded", onFileUploaded);
-    return () => {
-      window.removeEventListener("fileUploaded", onFileUploaded);
-    };
+    return () => window.removeEventListener("fileUploaded", onFileUploaded);
   }, []);
 
-  // 2) Handler to load the next batch
+  // 3) Infinite scroll loader
   const loadMore = () => {
-    const nextSlice = allFiles.slice(
+    const next = allFiles.slice(
       displayFiles.length,
       displayFiles.length + BATCH_SIZE
     );
-    setDisplayFiles((prev) => [...prev, ...nextSlice]);
+    setDisplayFiles((prev) => [...prev, ...next]);
   };
 
   if (loading) return <p>Loading gallery…</p>;
-  if (!allFiles.length) return <p>No uploads yet.</p>;
+  if (!allFiles.length) return <p>No images yet.</p>;
 
   const cols = { default: 4, 1200: 3, 800: 2, 500: 1 };
 
@@ -54,32 +55,20 @@ export default function Gallery({ refreshKey }) {
       next={loadMore}
       hasMore={displayFiles.length < allFiles.length}
       loader={<p>Loading more…</p>}
-      // You can also set `scrollThreshold="200px"` to trigger before the bottom
     >
       <Masonry
         breakpointCols={cols}
         className="my-masonry-grid"
         columnClassName="my-masonry-grid_column"
       >
-        {displayFiles.map((file) => {
-          const url = `/api/image?id=${file.id}`;
-          return file.mimeType.startsWith("video/") ? (
-            <video
-              key={file.id}
-              src={url}
-              preload="metadata"
-              controls
-              style={{ width: "100%", borderRadius: 4 }}
-            />
-          ) : (
-            <img
-              key={file.id}
-              src={url}
-              alt={file.name}
-              style={{ width: "100%", display: "block", borderRadius: 4 }}
-            />
-          );
-        })}
+        {displayFiles.map((file) => (
+          <img
+            key={file.id}
+            src={`/api/image?id=${file.id}`}
+            alt={file.name}
+            style={{ width: "100%", display: "block", borderRadius: 4 }}
+          />
+        ))}
       </Masonry>
     </InfiniteScroll>
   );
