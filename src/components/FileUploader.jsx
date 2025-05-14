@@ -37,38 +37,71 @@ export default function FileUploader({ onAllComplete }) {
   };
 
   const handleUploadAll = async () => {
-    setIsUploading(true);
-    for (const file of selectedFiles) {
-      const key = file.name;
-      setUploadStatuses((s) => ({ ...s, [key]: "Initializing…" }));
-      try {
-        const { data } = await axios.post("/api/session", {
-          name: file.name,
-          mimeType: file.type,
-        });
-        const { sessionUrl, token } = data;
-        setUploadStatuses((s) => ({ ...s, [key]: "Uploading…" }));
-        await axios
-          .put(sessionUrl, file, {
-            headers: {
-              "Content-Type": file.type,
-              Authorization: `Bearer ${token}`,
-              "Content-Range": `bytes 0-${file.size - 1}/${file.size}`,
-            },
-            onUploadProgress: (evt) => {
-              const pct = Math.round((evt.loaded * 100) / evt.total);
-              setUploadProgress((p) => ({ ...p, [key]: pct }));
-            },
-          })
-          .catch(() => console.warn("Network error ignored for", key));
-      } catch {
-        console.warn("Session init error ignored for", key);
-      }
-      setUploadStatuses((s) => ({ ...s, [key]: "✔️ Complete" }));
+  setIsUploading(true);
+
+  for (const file of selectedFiles) {
+    const key = file.name;
+    // 1) Initializing…
+    setUploadStatuses((s) => ({ ...s, [key]: "Initializing…" }));
+
+    let sessionData;
+    try {
+      const resp = await axios.post("/api/session", {
+        name: file.name,
+        mimeType: file.type,
+      });
+      sessionData = resp.data;
+    } catch (err) {
+      console.warn("Session init error ignored for", key, err);
+      // still attempt upload to keep UI moving
+      sessionData = {};
     }
-    if (onAllComplete) onAllComplete();
-    handleClear();
-  };
+
+    const { sessionUrl, token } = sessionData;
+    // 2) Uploading…
+    setUploadStatuses((s) => ({ ...s, [key]: "Uploading…" }));
+    if (sessionUrl && token) {
+      await axios
+        .put(sessionUrl, file, {
+          headers: {
+            "Content-Type": file.type,
+            Authorization: `Bearer ${token}`,
+            "Content-Range": `bytes 0-${file.size - 1}/${file.size}`,
+          },
+          onUploadProgress: (evt) => {
+            const pct = Math.round((evt.loaded * 100) / evt.total);
+            setUploadProgress((p) => ({ ...p, [key]: pct }));
+          },
+        })
+        .catch(() => console.warn("Network error ignored for", key));
+    }
+
+    // 3) Try to lookup the new file’s id via /api/list
+    let fileMeta = { name: file.name, mimeType: file.type };
+    try {
+      const listRes = await axios.get("/api/list");
+      const found = listRes.data.find((f) => f.name === file.name);
+      if (found && found.id) {
+        fileMeta = found;
+      }
+    } catch (err) {
+      console.warn("Could not re-fetch list for", key, err);
+    }
+
+    // 4) Mark complete & fire events
+    setUploadStatuses((s) => ({ ...s, [key]: "✔️ Complete" }));
+    window.dispatchEvent(
+      new CustomEvent("fileUploadStarted", { detail: fileMeta })
+    );
+    window.dispatchEvent(
+      new CustomEvent("fileUploaded", { detail: fileMeta })
+    );
+    if (onAllComplete) onAllComplete(fileMeta);
+  }
+
+  // 5) Cleanup
+  handleClear();
+};
 
   return (
     <div

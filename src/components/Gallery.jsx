@@ -22,6 +22,18 @@ export default function Gallery({ refreshKey }) {
       .catch(() => setLoading(false));
   }, [refreshKey]);
 
+  useEffect(() => {
+    const onFileUploaded = (e) => {
+      const newFile = e.detail; // { id, name, mimeType }
+      setAllFiles((prev) => [newFile, ...prev]);
+      setDisplayFiles((prev) => [newFile, ...prev]);
+    };
+    window.addEventListener("fileUploaded", onFileUploaded);
+    return () => {
+      window.removeEventListener("fileUploaded", onFileUploaded);
+    };
+  }, []);
+
   // 2) Handler to load the next batch
   const loadMore = () => {
     const nextSlice = allFiles.slice(
