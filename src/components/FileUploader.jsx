@@ -7,20 +7,16 @@ export default function FileUploader({ onAllComplete }) {
   const [previewUrls, setPreviewUrls] = useState([]);
   const [uploadStatuses, setUploadStatuses] = useState({});
   const [uploadProgress, setUploadProgress] = useState({});
+  const [isUploading, setIsUploading] = useState(false);
 
   // Generate blob URLs for preview
   useEffect(() => {
-    // revoke old URLs
     previewUrls.forEach((u) => u && URL.revokeObjectURL(u));
-
-    if (selectedFiles.length === 0) {
+    if (!selectedFiles.length) {
       setPreviewUrls([]);
       return;
     }
-
-    // create new blob URLs
-    const urls = selectedFiles.map((file) => URL.createObjectURL(file));
-    setPreviewUrls(urls);
+    setPreviewUrls(selectedFiles.map((file) => URL.createObjectURL(file)));
   }, [selectedFiles]);
 
   const handleFileChange = (e) => {
@@ -37,37 +33,39 @@ export default function FileUploader({ onAllComplete }) {
     setPreviewUrls([]);
     setUploadStatuses({});
     setUploadProgress({});
+    setIsUploading(false);
   };
 
   const handleUploadAll = async () => {
+    setIsUploading(true);
     for (const file of selectedFiles) {
       const key = file.name;
       setUploadStatuses((s) => ({ ...s, [key]: "Initializing…" }));
-
-      const { data } = await axios.post("/api/session", {
-        name: file.name,
-        mimeType: file.type,
-      });
-      const { sessionUrl, token } = data;
-
-      setUploadStatuses((s) => ({ ...s, [key]: "Uploading…" }));
-      await axios
-        .put(sessionUrl, file, {
-          headers: {
-            "Content-Type": file.type,
-            Authorization: `Bearer ${token}`,
-            "Content-Range": `bytes 0-${file.size - 1}/${file.size}`,
-          },
-          onUploadProgress: (evt) => {
-            const pct = Math.round((evt.loaded * 100) / evt.total);
-            setUploadProgress((p) => ({ ...p, [key]: pct }));
-          },
-        })
-        .catch((err) => console.warn("Upload error ignored for", key, err));
-
+      try {
+        const { data } = await axios.post("/api/session", {
+          name: file.name,
+          mimeType: file.type,
+        });
+        const { sessionUrl, token } = data;
+        setUploadStatuses((s) => ({ ...s, [key]: "Uploading…" }));
+        await axios
+          .put(sessionUrl, file, {
+            headers: {
+              "Content-Type": file.type,
+              Authorization: `Bearer ${token}`,
+              "Content-Range": `bytes 0-${file.size - 1}/${file.size}`,
+            },
+            onUploadProgress: (evt) => {
+              const pct = Math.round((evt.loaded * 100) / evt.total);
+              setUploadProgress((p) => ({ ...p, [key]: pct }));
+            },
+          })
+          .catch(() => console.warn("Network error ignored for", key));
+      } catch {
+        console.warn("Session init error ignored for", key);
+      }
       setUploadStatuses((s) => ({ ...s, [key]: "✔️ Complete" }));
     }
-
     if (onAllComplete) onAllComplete();
     handleClear();
   };
@@ -88,105 +86,119 @@ export default function FileUploader({ onAllComplete }) {
 
       {selectedFiles.length > 0 && (
         <div
+          id="preview"
           style={{
-            textAlign: "left",
+            textAlign: "center",
             marginTop: 16,
             border: "1px solid #ccc",
             padding: 8,
           }}
         >
           <h4>Selected Files:</h4>
-          <ul id="preview" style={{ listStyle: "none", padding: 0 }}>
-            {selectedFiles.map((file, idx) => {
-              const url = previewUrls[idx];
-              const isImage = file.type.startsWith("image/");
-              const isVideo = file.type.startsWith("video/");
+          <ul
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(4, 1fr)",
+              gap: 12,
+              justifyItems: "center",
+              padding: 0,
+              listStyle: "none",
+            }}
+          >
+            {previewUrls.map((url, idx) => {
+              const file = selectedFiles[idx];
+              const key = file.name;
               return (
                 <li
-                  key={file.name}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    marginBottom: 12,
-                  }}
+                  key={key}
+                  style={{ width: 80, height: 80, position: "relative" }}
                 >
-                  {isImage && url && (
-                    <img
-                      src={url}
-                      alt={file.name}
-                      style={{
-                        width: 80,
-                        height: 80,
-                        objectFit: "cover",
-                        marginRight: 12,
-                      }}
-                    />
-                  )}
-                  {isVideo && url && (
+                  {file.type.startsWith("video/") && url ? (
                     <video
                       src={url}
                       controls
                       preload="metadata"
                       style={{
-                        width: 80,
-                        height: 80,
+                        width: "100%",
+                        height: "100%",
                         objectFit: "cover",
-                        marginRight: 12,
+                        borderRadius: 4,
                       }}
                     />
-                  )}
-                  {!url && (
+                  ) : url ? (
+                    <img
+                      src={url}
+                      alt="preview"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        borderRadius: 4,
+                      }}
+                    />
+                  ) : (
                     <div
                       style={{
-                        width: 80,
-                        height: 80,
+                        width: "100%",
+                        height: "100%",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         background: "#eee",
-                        color: "#666",
-                        marginRight: 12,
-                        fontSize: "0.8em",
-                        textAlign: "center",
-                        padding: 4,
+                        borderRadius: 4,
                       }}
                     >
-                      {/* �<br />
-                      {file.name} */}
+                      <span role="img" aria-label="file">
+                        �
+                      </span>
                     </div>
                   )}
-
-                  <div style={{ flex: 1 }}>
-                    {/* <div>{file.name}</div> */}
-                    {uploadStatuses[file.name] && (
-                      <div style={{ fontSize: "0.9em", marginTop: 4 }}>
-                        {uploadStatuses[file.name]}
-                      </div>
-                    )}
-                    {uploadProgress[file.name] != null && (
-                      <progress
-                        value={uploadProgress[file.name]}
-                        max="100"
-                        style={{ width: "100%", marginTop: 4 }}
-                      />
-                    )}
-                  </div>
+                  {uploadStatuses[key] && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: 4,
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        background: "rgba(0,0,0,0.6)",
+                        color: "#fff",
+                        padding: "2px 6px",
+                        borderRadius: 4,
+                        fontSize: "0.7em",
+                      }}
+                    >
+                      {uploadStatuses[key]}
+                    </div>
+                  )}
+                  {isUploading && uploadProgress[key] != null && (
+                    <progress
+                      value={uploadProgress[key]}
+                      max="100"
+                      style={{
+                        position: "absolute",
+                        bottom: -8,
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        width: 80,
+                      }}
+                    />
+                  )}
                 </li>
               );
             })}
           </ul>
 
-          <div style={{ textAlign: "center" }}>
+          <div style={{ marginTop: 12 }}>
             <button
               onClick={handleUploadAll}
-              disabled={Object.values(uploadStatuses).some(
-                (st) => st === "Uploading…"
-              )}
+              disabled={isUploading}
               style={{ marginRight: 8 }}
             >
               Upload All
             </button>
-            <button onClick={handleClear}>Clear Selection</button>
+            <button onClick={handleClear} disabled={isUploading}>
+              Clear Selection
+            </button>
           </div>
         </div>
       )}
