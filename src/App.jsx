@@ -1,6 +1,8 @@
 import Gallery from "./components/Gallery";
 import FileUploader from "./components/FileUploader";
 import { useState } from "react";
+import scavengerImg from "./png/Scavenger Hunt.png";
+import scKoreanImg  from "./png/SC_Korean.png";
 
 export default function App() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -19,8 +21,8 @@ export default function App() {
         <p>For video upload, wait a couple of seconds once you tap add. The videos are being copied onto the preview for you to upload.</p>
         <FileUploader onAllComplete={handleUploadsComplete} />
       </div>
-      <img src="../assets/Scavenger Hunt.png" alt="" />
-      <img src="../assets/SC_Korean.pngclear" alt="" />
+      <img src={scavengerImg} />
+      <img src={scKoreanImg} />
       <div className="section" style={{ padding: "2rem" }}>
         <h1>💌 Guest Gallery</h1>
         <Gallery refreshKey={refreshKey} />
