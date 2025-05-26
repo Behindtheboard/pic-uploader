@@ -17,6 +17,7 @@ export default function App() {
         <h2>📷 Upload to our drive!</h2>
         <p>Please be careful to make sure you upload the correct photos or videos!</p>
         <p>For video upload, wait a couple of seconds once you tap add. The videos are being copied onto the preview for you to upload.</p>
+        <p>Videos won't show in the gallery, but be assured we have them!</p>
         <FileUploader onAllComplete={handleUploadsComplete} />
       </div>
 
