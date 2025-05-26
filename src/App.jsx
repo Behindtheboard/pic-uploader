@@ -21,8 +21,8 @@ export default function App() {
         <p>For video upload, wait a couple of seconds once you tap add. The videos are being copied onto the preview for you to upload.</p>
         <FileUploader onAllComplete={handleUploadsComplete} />
       </div>
-      <img src={scavengerImg} />
-      <img src={scKoreanImg} />
+      <img className="schunt" src={scavengerImg} />
+      <img className="schunt" src={scKoreanImg} />
       <div className="section" style={{ padding: "2rem" }}>
         <h1>💌 Guest Gallery</h1>
         <Gallery refreshKey={refreshKey} />

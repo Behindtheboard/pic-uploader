@@ -19,3 +19,12 @@
 input {
   text-align: center;
 }
+
+#hunt-ctn {
+  display: flex;
+  justify-content: center;
+}
+
+.schunt {
+  max-width: 40vw;
+}
