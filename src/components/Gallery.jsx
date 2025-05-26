@@ -12,7 +12,7 @@ export default function Gallery({ refreshKey }) {
   // 1) Initial fetch – only images
   useEffect(() => {
     setLoading(true);
-    fetch(`${import.meta.env.VITE_API_BASE_URL}/api/list`)
+    fetch(`/api/list`)
       .then((r) => r.json())
       .then((data) => {
         const images = data.filter((f) => !f.mimeType.startsWith("video/"));

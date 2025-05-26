@@ -47,7 +47,7 @@ export default function FileUploader({ onAllComplete }) {
       let sessionData;
       try {
         const resp = await axios.post(
-          `${import.meta.env.VITE_API_BASE_URL}/api/session`,
+          `${import.meta.env.UPLOAD_FOLDER_ID}/api/session`,
           {
             name: file.name,
             mimeType: file.type,
